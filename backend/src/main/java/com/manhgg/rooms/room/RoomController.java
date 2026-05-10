@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.data.mongodb.gridfs.GridFsResource;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -60,6 +59,14 @@ public class RoomController {
     return toResponse(roomService.createRoom(input, files));
   }
 
+  @PostMapping("/rooms/{id}/listing-template")
+  public GeneratedListingResponse generateListingTemplate(
+      @PathVariable String id,
+      @RequestHeader(value = "Authorization", required = false) String authorization) {
+    authService.currentUser(authorization);
+    return roomService.generateListingTemplate(id);
+  }
+
   @PutMapping(value = "/rooms/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public RoomResponse updateRoom(
       @PathVariable String id,
@@ -88,17 +95,35 @@ public class RoomController {
     roomService.deleteMedia(roomId, mediaId);
   }
 
+  @PostMapping("/media/migrate-gridfs")
+  public int migrateGridFsMedia(
+      @RequestHeader(value = "Authorization", required = false) String authorization) {
+    authService.requireAdmin(authorization);
+    return roomService.migrateGridFsMediaToFilesystem();
+  }
+
+  @PostMapping("/media/migrate-cloudinary")
+  public int migrateMediaToCloudinary(
+      @RequestHeader(value = "Authorization", required = false) String authorization) {
+    authService.requireAdmin(authorization);
+    return roomService.migrateMediaToCloudinary();
+  }
+
   @GetMapping("/media/{id}")
   public ResponseEntity<InputStreamResource> getMedia(@PathVariable String id) throws IOException {
-    GridFsResource resource = roomService.getMedia(id);
-    String contentType = resource.getContentType() == null ? MediaType.APPLICATION_OCTET_STREAM_VALUE : resource.getContentType();
+    ServedMedia media = roomService.getMedia(id);
+    String contentType = media.contentType() == null ? MediaType.APPLICATION_OCTET_STREAM_VALUE : media.contentType();
 
-    return ResponseEntity.ok()
+    ResponseEntity.BodyBuilder response = ResponseEntity.ok()
         .contentType(MediaType.parseMediaType(contentType))
-        .contentLength(resource.contentLength())
         .cacheControl(CacheControl.noCache())
-        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
-        .body(new InputStreamResource(resource.getInputStream()));
+        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + media.filename() + "\"");
+
+    if (media.contentLength() >= 0) {
+      response.contentLength(media.contentLength());
+    }
+
+    return response.body(new InputStreamResource(media.resource().getInputStream()));
   }
 
   private RoomResponse toResponse(Room room) {
@@ -111,19 +136,33 @@ public class RoomController {
             item.getSize(),
             item.getSortOrder(),
             item.getCreatedAt(),
-            "/api/media/" + item.getId()))
+            mediaUrl(item)))
         .toList();
 
     return new RoomResponse(
         room.getId(),
         room.getAddress(),
+        room.getRealAddress(),
         room.getPrice(),
         room.getCode(),
         room.getStatus(),
         room.getNote(),
+        room.getArea(),
+        room.getLayout(),
+        room.getFurniture(),
+        room.getAmenities(),
+        room.getSellingPoints(),
+        room.getContact(),
         media,
         room.getCreatedAt(),
         room.getUpdatedAt());
+  }
+
+  private String mediaUrl(MediaRef media) {
+    if (media.getUrl() != null && !media.getUrl().isBlank()) {
+      return media.getUrl();
+    }
+    return "/api/media/" + media.getId();
   }
 
   private Set<String> parseIds(String value) {

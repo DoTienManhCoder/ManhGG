@@ -21,7 +21,7 @@ export function App() {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [showUserManager, setShowUserManager] = useState(false);
 
-  const { rooms, isLoading, error, reloadRooms, removeRoom } = useRooms(Boolean(currentUser));
+  const { rooms, isLoading, error, reloadRooms, removeRoom, changeRoomStatus } = useRooms(Boolean(currentUser));
   const filteredRooms = useMemo(() => filterRooms(rooms, query, filter), [rooms, query, filter]);
   const isAdmin = currentUser?.role === "ADMIN";
 
@@ -41,18 +41,23 @@ export function App() {
 
   async function handleDeleteRoom(room) {
     if (!isAdmin) return;
-    const confirmed = window.confirm(`Xoa phong ${room.code}?`);
+    const confirmed = window.confirm(`Xóa phòng ${room.code}?`);
     if (!confirmed) return;
 
     await removeRoom(room.id);
     setViewingRoom(null);
   }
 
+  async function handleToggleRoomLock(room) {
+    if (!isAdmin) return;
+    await changeRoomStatus(room, room.status === "open" ? "lock" : "open");
+  }
+
   if (!isAuthReady) {
     return (
-      <main className="grid min-h-screen place-items-center bg-slate-100 px-4">
-        <div className="grid place-items-center gap-3 text-slate-700">
-          <div className="grid size-14 place-items-center rounded-lg bg-teal-700 text-3xl font-black text-white">M</div>
+      <main className="grid min-h-screen place-items-center bg-slate-900 px-4">
+        <div className="grid place-items-center gap-3 text-slate-200">
+          <div className="grid size-14 place-items-center rounded-lg bg-teal-500 text-3xl font-black text-slate-950">M</div>
           <strong className="text-2xl font-black">MANHGG</strong>
         </div>
       </main>
@@ -77,15 +82,15 @@ export function App() {
         <RoomToolbar query={query} filter={filter} onQueryChange={setQuery} onFilterChange={setFilter} />
 
         {error && (
-          <p className="mb-5 rounded-lg border border-red-300 bg-red-50 p-6 text-center font-bold text-red-600">
+          <p className="mb-5 rounded-lg border border-red-800 bg-red-950/50 p-6 text-center font-bold text-red-200">
             {error}
           </p>
         )}
 
-        {isLoading && <EmptyState message="Dang tai danh sach phong..." />}
+        {isLoading && <EmptyState message="Đang tải danh sách phòng..." />}
 
         {!isLoading && filteredRooms.length === 0 && (
-          <EmptyState title="Chua co phong nao" message='Bam "Them phong" de luu phong dau tien.' />
+          <EmptyState title="Chưa có phòng nào" message='Bấm "Thêm phòng" để lưu phòng đầu tiên.' />
         )}
 
         <RoomGrid rooms={filteredRooms} onOpenRoom={setViewingRoom} />
@@ -112,6 +117,7 @@ export function App() {
             setEditingRoom(room);
           }}
           onDelete={handleDeleteRoom}
+          onToggleLock={handleToggleRoomLock}
         />
       )}
 
@@ -119,3 +125,4 @@ export function App() {
     </>
   );
 }
+

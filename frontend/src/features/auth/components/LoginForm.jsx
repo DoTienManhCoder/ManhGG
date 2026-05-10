@@ -29,16 +29,16 @@ export function LoginForm({ onClose, onLoggedIn }) {
       <form onSubmit={handleSubmit}>
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <p className="mb-1 text-xs font-extrabold uppercase text-teal-700">Quan tri</p>
-            <h2 className="text-2xl font-extrabold">Dang nhap</h2>
+            <p className="mb-1 text-xs font-extrabold uppercase text-teal-300">Quản trị</p>
+            <h2 className="text-2xl font-extrabold">Đăng nhập</h2>
           </div>
-          <IconButton type="button" onClick={onClose} aria-label="Dong">
+          <IconButton type="button" onClick={onClose} aria-label="Đóng">
             <X size={18} />
           </IconButton>
         </div>
 
         <div className="grid gap-3.5">
-          <Field label="Tai khoan">
+          <Field label="Tài khoản">
             <input
               className={fieldClass}
               value={username}
@@ -47,7 +47,7 @@ export function LoginForm({ onClose, onLoggedIn }) {
               required
             />
           </Field>
-          <Field label="Mat khau">
+          <Field label="Mật khẩu">
             <input
               className={fieldClass}
               value={password}
@@ -60,11 +60,11 @@ export function LoginForm({ onClose, onLoggedIn }) {
 
         <div className="mt-5 flex justify-end gap-2.5 max-sm:flex-col">
           <Button variant="ghost" type="button" onClick={onClose}>
-            Huy
+            Hủy
           </Button>
           <Button type="submit" disabled={isSubmitting}>
             <KeyRound size={16} />
-            {isSubmitting ? "Dang dang nhap..." : "Dang nhap"}
+            {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
           </Button>
         </div>
       </form>

@@ -16,6 +16,8 @@ public class Room {
   @NotBlank
   private String address;
 
+  private String realAddress = "";
+
   @NotBlank
   private String price;
 
@@ -26,6 +28,12 @@ public class Room {
   private String status = "open";
 
   private String note = "";
+  private String area = "";
+  private String layout = "";
+  private String furniture = "";
+  private String amenities = "";
+  private String sellingPoints = "";
+  private String contact = "";
   private List<MediaRef> media = new ArrayList<>();
   private Instant createdAt = Instant.now();
   private Instant updatedAt = Instant.now();
@@ -44,6 +52,14 @@ public class Room {
 
   public void setAddress(String address) {
     this.address = address;
+  }
+
+  public String getRealAddress() {
+    return realAddress;
+  }
+
+  public void setRealAddress(String realAddress) {
+    this.realAddress = realAddress;
   }
 
   public String getPrice() {
@@ -76,6 +92,54 @@ public class Room {
 
   public void setNote(String note) {
     this.note = note;
+  }
+
+  public String getArea() {
+    return area;
+  }
+
+  public void setArea(String area) {
+    this.area = area;
+  }
+
+  public String getLayout() {
+    return layout;
+  }
+
+  public void setLayout(String layout) {
+    this.layout = layout;
+  }
+
+  public String getFurniture() {
+    return furniture;
+  }
+
+  public void setFurniture(String furniture) {
+    this.furniture = furniture;
+  }
+
+  public String getAmenities() {
+    return amenities;
+  }
+
+  public void setAmenities(String amenities) {
+    this.amenities = amenities;
+  }
+
+  public String getSellingPoints() {
+    return sellingPoints;
+  }
+
+  public void setSellingPoints(String sellingPoints) {
+    this.sellingPoints = sellingPoints;
+  }
+
+  public String getContact() {
+    return contact;
+  }
+
+  public void setContact(String contact) {
+    this.contact = contact;
   }
 
   public List<MediaRef> getMedia() {

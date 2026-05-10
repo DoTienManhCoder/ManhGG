@@ -6,7 +6,7 @@ export function filterRooms(rooms, query, filter) {
 
   return rooms.filter((room) => {
     const matchesStatus = filter === ROOM_FILTERS.ALL || room.status === filter;
-    const searchableText = normalizeText(`${room.address} ${room.price} ${room.code} ${room.note}`);
+    const searchableText = normalizeText(`${room.address} ${room.realAddress} ${room.price} ${room.code} ${room.note}`);
     return matchesStatus && searchableText.includes(keyword);
   });
 }

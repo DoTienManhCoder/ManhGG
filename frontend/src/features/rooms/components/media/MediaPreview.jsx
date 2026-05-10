@@ -2,7 +2,7 @@ export function MediaPreview({ media, controls = false }) {
   if (media.type?.startsWith("video/")) {
     return (
       <video
-        className="h-full w-full object-cover"
+        className="block h-full w-full object-cover"
         src={media.url}
         controls={controls}
         muted={!controls}
@@ -12,5 +12,5 @@ export function MediaPreview({ media, controls = false }) {
     );
   }
 
-  return <img className="h-full w-full object-cover" src={media.url} alt={media.name || "Anh phong"} />;
+  return <img className="block h-full w-full object-cover" src={media.url} alt={media.name || "Ảnh phòng"} />;
 }

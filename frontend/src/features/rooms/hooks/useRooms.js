@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { deleteRoom, fetchRooms } from "../../../services/roomsApi";
+import { deleteRoom, fetchRooms, updateRoomStatus } from "../../../services/roomsApi";
 
 export function useRooms(enabled) {
   const [rooms, setRooms] = useState([]);
@@ -37,5 +37,13 @@ export function useRooms(enabled) {
     [reloadRooms],
   );
 
-  return { rooms, isLoading, error, reloadRooms, removeRoom };
+  const changeRoomStatus = useCallback(
+    async (room, status) => {
+      await updateRoomStatus(room, status);
+      await reloadRooms();
+    },
+    [reloadRooms],
+  );
+
+  return { rooms, isLoading, error, reloadRooms, removeRoom, changeRoomStatus };
 }

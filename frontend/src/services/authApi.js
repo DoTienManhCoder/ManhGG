@@ -1,16 +1,29 @@
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 const TOKEN_KEY = "manhgg.authToken";
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 
 export function getAuthToken() {
-  return window.localStorage.getItem(TOKEN_KEY);
+  return window.localStorage.getItem(TOKEN_KEY) || getCookie(TOKEN_KEY);
 }
 
 function setAuthToken(token) {
   window.localStorage.setItem(TOKEN_KEY, token);
+  document.cookie = `${TOKEN_KEY}=${encodeURIComponent(token)}; Max-Age=${COOKIE_MAX_AGE}; Path=/; SameSite=Lax`;
 }
 
-function clearAuthToken() {
+export function clearAuthToken() {
   window.localStorage.removeItem(TOKEN_KEY);
+  document.cookie = `${TOKEN_KEY}=; Max-Age=0; Path=/; SameSite=Lax`;
+}
+
+function getCookie(name) {
+  const prefix = `${name}=`;
+  const item = document.cookie
+    .split(";")
+    .map((value) => value.trim())
+    .find((value) => value.startsWith(prefix));
+
+  return item ? decodeURIComponent(item.slice(prefix.length)) : "";
 }
 
 export function authHeaders() {
@@ -18,8 +31,22 @@ export function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-async function readError(response, fallback) {
-  const message = await response.text();
+export async function readApiError(response, fallback) {
+  const rawMessage = await response.text();
+  let message = rawMessage;
+
+  try {
+    const payload = JSON.parse(rawMessage);
+    message = payload.message || payload.error || fallback;
+  } catch {
+    message = rawMessage || fallback;
+  }
+
+  if (response.status === 401) {
+    clearAuthToken();
+    return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+  }
+
   return message || fallback;
 }
 
@@ -30,7 +57,7 @@ export async function login(username, password) {
     body: JSON.stringify({ username, password }),
   });
 
-  if (!response.ok) throw new Error(await readError(response, "Khong the dang nhap"));
+  if (!response.ok) throw new Error(await readApiError(response, "Không thể đăng nhập"));
 
   const payload = await response.json();
   setAuthToken(payload.token);
@@ -68,7 +95,7 @@ export async function fetchUsers() {
     headers: authHeaders(),
   });
 
-  if (!response.ok) throw new Error(await readError(response, "Khong the tai tai khoan"));
+  if (!response.ok) throw new Error(await readApiError(response, "Không thể tải tài khoản"));
   return response.json();
 }
 
@@ -79,7 +106,7 @@ export async function createUser(username, password) {
     body: JSON.stringify({ username, password }),
   });
 
-  if (!response.ok) throw new Error(await readError(response, "Khong the tao tai khoan"));
+  if (!response.ok) throw new Error(await readApiError(response, "Không thể tạo tài khoản"));
   return response.json();
 }
 
@@ -89,5 +116,5 @@ export async function deleteUser(id) {
     headers: authHeaders(),
   });
 
-  if (!response.ok) throw new Error(await readError(response, "Khong the xoa tai khoan"));
+  if (!response.ok) throw new Error(await readApiError(response, "Không thể xóa tài khoản"));
 }

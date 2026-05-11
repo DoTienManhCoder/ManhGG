@@ -14,6 +14,8 @@ export function RoomDetail({ room, canManage, onClose, onEdit, onDelete, onToggl
   const [listingTemplate, setListingTemplate] = useState("");
   const [isGeneratingTemplate, setIsGeneratingTemplate] = useState(false);
   const [hasCopiedTemplate, setHasCopiedTemplate] = useState(false);
+  const [copiedMediaId, setCopiedMediaId] = useState(null);
+  const [copyingMediaId, setCopyingMediaId] = useState(null);
   const [isTogglingLock, setIsTogglingLock] = useState(false);
   const canSaveImages = room.status === "open";
   const isLocked = room.status === "lock";
@@ -66,6 +68,37 @@ export function RoomDetail({ room, canManage, onClose, onEdit, onDelete, onToggl
     await navigator.clipboard.writeText(listingTemplate);
     setHasCopiedTemplate(true);
     window.setTimeout(() => setHasCopiedTemplate(false), 1800);
+  }
+
+  async function handleCopyImage(media) {
+    if (!media) return;
+    if (!navigator.clipboard?.write || !window.ClipboardItem) {
+      window.alert("Trình duyệt chưa hỗ trợ copy ảnh. Bạn có thể dùng nút Lưu ảnh.");
+      return;
+    }
+
+    setDownloadError("");
+    setCopyingMediaId(media.id);
+    try {
+      const response = await fetch(media.url);
+      if (!response.ok) {
+        throw new Error("copy-image-failed");
+      }
+
+      const sourceBlob = await response.blob();
+      const imageBlob = await clipboardImageBlob(sourceBlob);
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          [imageBlob.type]: imageBlob,
+        }),
+      ]);
+      setCopiedMediaId(media.id);
+      window.setTimeout(() => setCopiedMediaId(null), 1800);
+    } catch {
+      setDownloadError("Không thể copy ảnh. Vui lòng thử lại hoặc dùng nút Lưu ảnh.");
+    } finally {
+      setCopyingMediaId(null);
+    }
   }
 
   async function handleToggleLock() {
@@ -126,17 +159,30 @@ export function RoomDetail({ room, canManage, onClose, onEdit, onDelete, onToggl
                       <MediaPreview media={media} controls />
                     )}
                     {canSaveImages && isImage(media) && (
-                      <button
-                        className="absolute bottom-2 right-2 inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-slate-950/85 px-3 text-xs font-extrabold text-white shadow-lg transition hover:bg-slate-950 disabled:cursor-progress disabled:opacity-75 max-sm:left-2 max-sm:text-sm"
-                        type="button"
-                        onClick={() => handleSaveImage(media)}
-                        disabled={downloadingMediaId === media.id}
-                        title="Lưu ảnh về máy"
-                        aria-label={`Lưu ảnh ${media.name || room.code} về máy`}
-                      >
-                        <Download size={16} />
-                        {downloadingMediaId === media.id ? "Đang lưu" : "Lưu ảnh"}
-                      </button>
+                      <div className="absolute bottom-2 right-2 flex flex-wrap justify-end gap-1.5 max-sm:left-2">
+                        <button
+                          className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-slate-950/85 px-3 text-xs font-extrabold text-white shadow-lg transition hover:bg-slate-950 disabled:cursor-progress disabled:opacity-75 max-sm:text-sm"
+                          type="button"
+                          onClick={() => handleCopyImage(media)}
+                          disabled={copyingMediaId === media.id}
+                          title="Copy ảnh"
+                          aria-label={`Copy ảnh ${media.name || room.code}`}
+                        >
+                          {copiedMediaId === media.id ? <Check size={16} /> : <Copy size={16} />}
+                          {copyingMediaId === media.id ? "Đang copy" : copiedMediaId === media.id ? "Đã copy" : "Copy ảnh"}
+                        </button>
+                        <button
+                          className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-slate-950/85 px-3 text-xs font-extrabold text-white shadow-lg transition hover:bg-slate-950 disabled:cursor-progress disabled:opacity-75 max-sm:text-sm"
+                          type="button"
+                          onClick={() => handleSaveImage(media)}
+                          disabled={downloadingMediaId === media.id}
+                          title="Lưu ảnh về máy"
+                          aria-label={`Lưu ảnh ${media.name || room.code} về máy`}
+                        >
+                          <Download size={16} />
+                          {downloadingMediaId === media.id ? "Đang lưu" : "Lưu ảnh"}
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))
@@ -167,10 +213,10 @@ export function RoomDetail({ room, canManage, onClose, onEdit, onDelete, onToggl
                   <pre className="whitespace-pre-wrap font-sans text-sm leading-6 text-slate-100">
                     {listingTemplate}
                   </pre>
-                  <div className="mt-3 flex justify-end">
+                  <div className="mt-3 flex flex-wrap justify-end gap-2">
                     <Button variant="ghost" type="button" onClick={handleCopyTemplate}>
                       {hasCopiedTemplate ? <Check size={16} /> : <Copy size={16} />}
-                      {hasCopiedTemplate ? "Đã copy" : "Copy"}
+                      {hasCopiedTemplate ? "Đã copy text" : "Copy text"}
                     </Button>
                   </div>
                 </div>
@@ -218,15 +264,26 @@ export function RoomDetail({ room, canManage, onClose, onEdit, onDelete, onToggl
           <div className="relative z-10 flex max-h-[94vh] w-full max-w-6xl flex-col gap-3">
             <div className="flex items-center justify-end gap-2">
               {canSaveImages && (
-                <button
-                  className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-slate-800 px-3 text-sm font-extrabold text-slate-100 shadow-lg transition hover:bg-slate-700 disabled:cursor-progress disabled:opacity-75"
-                  type="button"
-                  onClick={() => handleSaveImage(previewImage)}
-                  disabled={downloadingMediaId === previewImage.id}
-                >
-                  <Download size={16} />
-                  {downloadingMediaId === previewImage.id ? "Đang lưu" : "Lưu ảnh"}
-                </button>
+                <>
+                  <button
+                    className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-slate-800 px-3 text-sm font-extrabold text-slate-100 shadow-lg transition hover:bg-slate-700 disabled:cursor-progress disabled:opacity-75"
+                    type="button"
+                    onClick={() => handleCopyImage(previewImage)}
+                    disabled={copyingMediaId === previewImage.id}
+                  >
+                    {copiedMediaId === previewImage.id ? <Check size={16} /> : <Copy size={16} />}
+                    {copyingMediaId === previewImage.id ? "Đang copy" : copiedMediaId === previewImage.id ? "Đã copy" : "Copy ảnh"}
+                  </button>
+                  <button
+                    className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-slate-800 px-3 text-sm font-extrabold text-slate-100 shadow-lg transition hover:bg-slate-700 disabled:cursor-progress disabled:opacity-75"
+                    type="button"
+                    onClick={() => handleSaveImage(previewImage)}
+                    disabled={downloadingMediaId === previewImage.id}
+                  >
+                    <Download size={16} />
+                    {downloadingMediaId === previewImage.id ? "Đang lưu" : "Lưu ảnh"}
+                  </button>
+                </>
               )}
               <IconButton className="border-slate-600 bg-slate-800 text-slate-100 hover:bg-slate-700" type="button" onClick={() => setPreviewImage(null)} aria-label="Đóng">
                 <X size={18} />
@@ -244,6 +301,30 @@ export function RoomDetail({ room, canManage, onClose, onEdit, onDelete, onToggl
 
 function isImage(media) {
   return media.type?.startsWith("image/");
+}
+
+async function clipboardImageBlob(blob) {
+  if (blob.type === "image/png" || window.ClipboardItem.supports?.(blob.type)) {
+    return blob;
+  }
+
+  const bitmap = await createImageBitmap(blob);
+  const canvas = document.createElement("canvas");
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const context = canvas.getContext("2d");
+  context.drawImage(bitmap, 0, 0);
+  bitmap.close?.();
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((pngBlob) => {
+      if (pngBlob) {
+        resolve(pngBlob);
+      } else {
+        reject(new Error("png-conversion-failed"));
+      }
+    }, "image/png");
+  });
 }
 
 function downloadFileName(room, media) {

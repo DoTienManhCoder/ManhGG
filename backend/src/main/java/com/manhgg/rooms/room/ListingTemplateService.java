@@ -14,15 +14,17 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ListingTemplateService {
   private static final String GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent";
-  private static final String DEFAULT_CONTACT = "Mạnh - SĐT/Zalo/Mess 0353830297";
+  private static final String DEFAULT_CONTACT = "Tiến Mạnh - 0373.907.159 (có Zalo)";
   private static final String STYLE_SAMPLE = """
-      CHO THUÊ CĂN HỘ EMERALD - CELADON CITY
-      Căn hộ gọn đẹp, đầy đủ nội thất - dọn vào ở ngay
-      Diện tích: 63m2
-      Thiết kế: 2 phòng ngủ | 1 WC
-      Full nội thất đẹp, bố trí gọn gàng - tiện nghi
-      Giá tốt, hỗ trợ kéo giá cho khách thiện chí
-      Liên hệ: Mạnh - SĐT/Zalo/Mess 0353830297 để xem phòng thực tế
+      🔥🔥 CHO THUÊ CĂN HỘ #1PN TÁCH BẾP - GIẶT RIÊNG NGAY TÂN BÌNH - GẦN ETOWN CỘNG HOÀ
+      ✨Nội thất: máy lạnh, tủ lạnh, tủ đồ, nệm, gra gối, sofa, kệ bếp, tủ bếp, máy nước nóng, tivi, lò vi sóng, bếp từ,...
+      ▪️Toà thang máy, hầm xe rộng
+      ▪️Không chung chủ, Giờ giấc tự do
+      ▪️Có dọn phòng
+      ▪️Ra vào vân tay, camera 24/24
+      📍 Địa chỉ: Tân Kì Tân Quý, Phường Tân Quý, Tân Phú
+      ☎ Gọi ngay: 0373.907.159 Tiến Mạnh (có ZALO) để xem phòng
+      #CanHoChoThue #PhongTroTanBinh #PhongDepGiaTot #ChoThuePhong
       """;
 
   private final RestClient restClient;
@@ -69,62 +71,54 @@ public class ListingTemplateService {
             "role", "user",
             "parts", List.of(Map.of("text", userPrompt(room))))),
         "generationConfig", Map.of(
-            "temperature", 1.05,
-            "topP", 0.95,
-            "maxOutputTokens", 1200,
+            "temperature", 0.65,
+            "topP", 0.85,
+            "maxOutputTokens", 700,
             "thinkingConfig", Map.of("thinkingBudget", 0)));
   }
 
   private String systemInstruction() {
     return """
-        Bạn là chuyên gia viết tin đăng cho sale phòng trọ, căn hộ cho thuê tại Việt Nam.
-        Hãy viết tiếng Việt có dấu thật tự nhiên, hấp dẫn, dùng để đăng Facebook/Zalo.
-        Chỉ nói những điểm hay, thông tin có lợi cho khách và địa chỉ ẩn/khu vực được phép công khai.
-        Tuyệt đối không đưa địa chỉ đúng nội bộ, thông tin chủ nhà, điểm không tốt, phí/lưu ý nội bộ vào tin đăng.
-        Nếu note nội bộ có thông tin mâu thuẫn với điểm hay, hãy tránh nói quá đà và không bịa đặt.
-        Không tự bịa tiện ích, diện tích, nội thất hoặc thông tin liên hệ nếu dữ liệu không có.
-        Tuyệt đối không ghi giá thuê chính xác trong tin đăng, dù dữ liệu có giá. Chỉ được nói mềm như "giá tốt", "có thể kéo giá", "inbox để nhận giá tốt".
-        Bắt buộc làm rõ các thông tin quan trọng bằng từng dòng riêng: địa chỉ công khai, dạng phòng, nội thất, liên hệ/SĐT.
-        Các ý hay còn lại vẫn được viết tự nhiên, có cảm xúc, nhưng không được làm chìm các dòng thông tin quan trọng.
-        Mỗi lần tạo một phiên bản mới khác cách mở bài, cách nhấn lợi ích và lời kêu gọi.
+        Bạn viết tin đăng cho thuê phòng/căn hộ bằng tiếng Việt có dấu, dùng đăng Facebook/Zalo.
+        Viết ngắn gọn, rõ ý, giống mẫu tin thực tế của môi giới: có emoji vừa phải, gạch đầu dòng, không văn chương hoa mỹ.
+        Chỉ dùng thông tin có trong dữ liệu và địa chỉ công khai. Không đưa địa chỉ đúng nội bộ, thông tin chủ nhà, điểm xấu, phí/lưu ý nội bộ.
+        Không ghi giá thuê chính xác; chỉ nói giá tốt, inbox/Zalo để nhận giá hoặc hỗ trợ kéo giá.
+        Ưu tiên các ý: dạng phòng, nội thất, tiện ích toà, giờ giấc, an ninh, vị trí, liên hệ.
+        Tin cuối cùng phải dài khoảng 500-600 ký tự, không dài dòng.
         """;
   }
 
   private String userPrompt(Room room) {
     return """
-        Tạo 1 mẫu tin đăng cho thuê phòng/căn hộ thật hút khách từ thông tin sau.
-        Hãy viết kết quả bằng tiếng Việt có dấu. Phong cách tham khảo, không sao chép y nguyên:
+        Tạo 1 mẫu tin đăng cho thuê phòng/căn hộ ngắn gọn từ thông tin sau.
+        Phong cách tham khảo, không sao chép y nguyên:
         %s
 
-        Thông tin ĐƯỢC phép đưa cho khách:
+        Thông tin được phép đưa cho khách:
         - Mã phòng: %s
         - Địa chỉ ẩn/khu vực công khai: %s
-        - Cách nói về giá: Không đưa giá chính xác. Chỉ nói "giá tốt", "hỗ trợ kéo giá", hoặc "inbox/Zalo để nhận giá tốt".
+        - Giá: không đưa số giá chính xác; chỉ nói giá tốt/inbox/Zalo để nhận giá.
         - Dạng phòng: %s
         - Nội thất: %s
         - Tiện ích/vị trí có lợi: %s
         - Điểm hay cần nhấn: %s
-        - Liên hệ bắt buộc: %s
+        - Liên hệ: %s
 
         Note nội bộ chỉ để kiểm tra độ chính xác, KHÔNG đưa nguyên văn vào tin đăng:
         %s
 
         Yêu cầu:
-        - Mở bài bắt mắt cho khách đang lướt tin.
-        - Sau câu mở bài phải có một cụm thông tin rõ ràng, mỗi ý một dòng riêng, theo đúng nhãn:
-          📍 Địa chỉ: %s
-          🏠 Dạng phòng: %s
-          🛋️ Nội thất: %s
-          📞 Liên hệ: %s
-        - Không được có dòng "Giá thuê:" và không được ghi con số giá cụ thể trong bài.
-        - Có thể dùng một dòng mềm như "💸 Giá tốt, inbox/Zalo Mạnh để nhận giá và hỗ trợ kéo giá".
-        - Nếu diện tích, tiện ích hoặc điểm hay có dữ liệu thì vẫn đưa vào các dòng/đoạn còn lại cho tự nhiên.
-        - Có emoji vừa phải, không quá rối.
-        - Độ dài bắt buộc 8-12 dòng, không viết dưới 8 dòng.
-        - Chỉ dùng địa chỉ ẩn/khu vực công khai, không gợi ý khách đến gặp chủ trực tiếp.
-        - Lời mời cuối bài: inbox/gọi/Zalo/Mess cho Mạnh để được gửi ảnh và hẹn xem phòng.
-        - Kết thúc trọn câu, không dừng giữa chừng.
-        - Chỉ trả về nội dung mẫu tin, không giải thích thêm.
+        - Độ dài 500-600 ký tự.
+        - Mở bài 1 dòng dạng: 🔥🔥 CHO THUÊ ... + dạng phòng/khu vực/điểm nổi bật.
+        - Không đưa danh sách nội thất vào tiêu đề/mở bài.
+        - Các dòng sau dùng bullet ngắn như ✨, ▪️, 📍, ☎.
+        - Bắt buộc tách nội thất thành 1 gạch đầu dòng riêng nếu có dữ liệu, dạng: ✨Nội thất: ...
+        - Tiện ích/toà nhà/an ninh/giờ giấc mỗi ý ngắn một dòng.
+        - Cuối bài có số điện thoại/Zalo và tên liên hệ.
+        - Thêm 4-6 hashtag cuối bài, viết liền không dấu hoặc có dấu đều được, ưu tiên theo khu vực/dạng phòng/tiện ích. Ví dụ: #CanHoChoThue #PhongTroGiaTot #PhongDep #ChoThuePhong.
+        - Không dùng từ hoa mỹ như "đẳng cấp", "sang trọng bậc nhất", "siêu phẩm" nếu dữ liệu không có.
+        - Không ghi giá thuê chính xác, không đưa địa chỉ đúng nội bộ.
+        - Chỉ trả về nội dung mẫu tin, không giải thích.
         - Mã biến thể để tạo mới: %s
         """.formatted(
         STYLE_SAMPLE,
@@ -136,10 +130,6 @@ public class ListingTemplateService {
         fallback(room.getSellingPoints()),
         contact(room),
         fallback(room.getNote()),
-        fallback(room.getAddress()),
-        fallback(room.getLayout()),
-        fallback(room.getFurniture()),
-        contact(room),
         UUID.randomUUID());
   }
 
@@ -152,7 +142,9 @@ public class ListingTemplateService {
     if (room.getRealAddress() != null && !room.getRealAddress().isBlank()) {
       result = result.replace(room.getRealAddress(), fallback(room.getAddress()));
     }
-    return result.replace("0967458281", "0353830297");
+    return result
+        .replace("0967458281", "0373.907.159")
+        .replace("0353830297", "0373.907.159");
   }
 
   private String fallback(String value) {
